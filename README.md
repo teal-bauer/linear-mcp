@@ -5,11 +5,13 @@ A Model Context Protocol (MCP) server that provides tools for interacting with L
 ## Features
 
 - **Issue Management**
+
   - Create new issues with customizable properties (title, description, team, assignee, priority, labels)
   - List issues with flexible filtering options (team, assignee, status)
   - Update existing issues (title, description, status, assignee, priority)
 
 - **Team Management**
+
   - List all teams in the workspace
   - Access team details including ID, name, key, and description
 
@@ -23,72 +25,95 @@ A Model Context Protocol (MCP) server that provides tools for interacting with L
 - A Linear account with API access
 - Linear API key with appropriate permissions
 
-## Installation
+## Quick Start
+
+1. Get your Linear API key from [Linear's Developer Settings](https://linear.app/settings/api)
+
+2. Run with your API key:
+
+```bash
+LINEAR_API_KEY=your-api-key npx @ibraheem4/linear-mcp
+```
+
+Or set it in your environment:
+
+```bash
+export LINEAR_API_KEY=your-api-key
+npx @ibraheem4/linear-mcp
+```
+
+## Development Setup
 
 1. Clone the repository:
+
 ```bash
 git clone [repository-url]
 cd linear-server
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Build the project:
+
 ```bash
 npm run build
 ```
 
+## Running with Inspector
+
+For local development and debugging, you can use the MCP Inspector:
+
+1. Install supergateway:
+
+```bash
+npm install -g supergateway
+```
+
+2. Use the included `run.sh` script:
+
+```bash
+chmod +x run.sh
+LINEAR_API_KEY=your-api-key ./run.sh
+```
+
+3. Access the Inspector:
+   - Open [localhost:1337](http://localhost:1337) in your browser
+   - The Inspector connects via Server-Sent Events (SSE)
+   - Test and debug tool calls through the Inspector interface
+
 ## Configuration
 
-1. Obtain a Linear API key:
-   - Go to your Linear workspace settings
-   - Navigate to the API section
-   - Generate a new API key with appropriate permissions
-
-2. Configure the MCP server in your settings file based on your client:
-
-### For Cline (VS Code Extension)
-Location: `~/Library/Application Support/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/cline_mcp_settings.json`
-```json
-{
-  "mcpServers": {
-    "linear-server": {
-      "command": "node",
-      "args": ["/path/to/linear-server/build/index.js"],
-      "env": {
-        "LINEAR_API_KEY": "your-api-key-here"
-      },
-      "disabled": false,
-      "alwaysAllow": []
-    }
-  }
-}
-```
-
-### For Roo Cline
-Location: `~/Library/Application Support/Roo Cline/settings/cline_mcp_settings.json`
-```json
-{
-  "mcpServers": {
-    "linear-server": {
-      "command": "node",
-      "args": ["/path/to/linear-server/build/index.js"],
-      "env": {
-        "LINEAR_API_KEY": "your-api-key-here"
-      },
-      "disabled": false,
-      "alwaysAllow": []
-    }
-  }
-}
-```
+Configure the MCP server in your settings file based on your client:
 
 ### For Claude Desktop
+
 - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "linear-server": {
+      "command": "node",
+      "args": ["/path/to/linear-server/build/index.js"],
+      "env": {
+        "LINEAR_API_KEY": "your-api-key-here"
+      },
+      "disabled": false,
+      "alwaysAllow": []
+    }
+  }
+}
+```
+
+### For VS Code Extension (Cline)
+
+Location: `~/Library/Application Support/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/cline_mcp_settings.json`
+
 ```json
 {
   "mcpServers": {
@@ -108,7 +133,9 @@ Location: `~/Library/Application Support/Roo Cline/settings/cline_mcp_settings.j
 ## Available Tools
 
 ### create_issue
+
 Creates a new issue in Linear.
+
 ```typescript
 {
   title: string;          // Required: Issue title
@@ -121,7 +148,9 @@ Creates a new issue in Linear.
 ```
 
 ### list_issues
+
 Lists issues with optional filters.
+
 ```typescript
 {
   teamId?: string;      // Optional: Filter by team ID
@@ -132,7 +161,9 @@ Lists issues with optional filters.
 ```
 
 ### update_issue
+
 Updates an existing issue.
+
 ```typescript
 {
   issueId: string;       // Required: Issue ID
@@ -145,10 +176,13 @@ Updates an existing issue.
 ```
 
 ### list_teams
+
 Lists all teams in the workspace. No parameters required.
 
 ### list_projects
+
 Lists all projects with optional filtering.
+
 ```typescript
 {
   teamId?: string;     // Optional: Filter by team ID
@@ -156,38 +190,45 @@ Lists all projects with optional filtering.
 }
 ```
 
+### get_issue
+
+Gets detailed information about a specific issue.
+
+```typescript
+{
+  issueId: string; // Required: Issue ID
+}
+```
+
 ## Development
 
 For development with auto-rebuild:
+
 ```bash
 npm run watch
 ```
 
-### Debugging
-
-Since MCP servers communicate over stdio, debugging can be challenging. The project includes the MCP Inspector for debugging:
-
-```bash
-npm run inspector
-```
-
-This will provide a URL to access debugging tools in your browser.
-
 ## Error Handling
 
 The server includes comprehensive error handling for:
+
 - Invalid API keys
 - Missing required parameters
 - Linear API errors
 - Invalid tool requests
 
-All errors are properly formatted and returned with descriptive messages to help diagnose issues.
+All errors are properly formatted and returned with descriptive messages.
 
 ## Technical Details
 
 Built with:
+
 - TypeScript
 - Linear SDK (@linear/sdk v37.0.0)
 - MCP SDK (@modelcontextprotocol/sdk v0.6.0)
 
 The server uses stdio for communication and implements the Model Context Protocol for seamless integration with AI agents.
+
+## License
+
+MIT
