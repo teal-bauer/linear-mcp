@@ -48,7 +48,7 @@ npx @ibraheem4/linear-mcp
 
 ```bash
 git clone [repository-url]
-cd linear-server
+cd linear-mcp
 ```
 
 2. Install dependencies:
@@ -97,9 +97,9 @@ Configure the MCP server in your settings file based on your client:
 ```json
 {
   "mcpServers": {
-    "linear-server": {
+    "linear-mcp": {
       "command": "node",
-      "args": ["/path/to/linear-server/build/index.js"],
+      "args": ["/path/to/linear-mcp/build/index.js"],
       "env": {
         "LINEAR_API_KEY": "your-api-key-here"
       },
@@ -117,9 +117,9 @@ Location: `~/Library/Application Support/Code/User/globalStorage/rooveterinaryin
 ```json
 {
   "mcpServers": {
-    "linear-server": {
+    "linear-mcp": {
       "command": "node",
-      "args": ["/path/to/linear-server/build/index.js"],
+      "args": ["/path/to/linear-mcp/build/index.js"],
       "env": {
         "LINEAR_API_KEY": "your-api-key-here"
       },
@@ -128,6 +128,14 @@ Location: `~/Library/Application Support/Code/User/globalStorage/rooveterinaryin
     }
   }
 }
+```
+
+### For Cursor ([cursor.sh](https://cursor.sh))
+
+For Cursor, the server must be run with the full path:
+
+```bash
+node /Users/ibraheem/Projects/linear-mcp/build/index.js
 ```
 
 ## Available Tools

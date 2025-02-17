@@ -32,7 +32,12 @@
     "linear",
     "mcp",
     "model-context-protocol",
-    "cli"
+    "cli",
+    "roo",
+    "cline",
+    "cursor",
+    "windsurf",
+    "claude"
   ],
   "author": "Ibraheem Abdul-Malik",
   "license": "MIT",
