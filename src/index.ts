@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import { config } from "dotenv";
+config();
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -462,7 +465,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           priorityLabel: issue.priorityLabel,
           status: state ? await state.name : "Unknown",
           url: issue.url,
-          
+
           // Dates
           createdAt: issue.createdAt,
           updatedAt: issue.updatedAt,
@@ -470,56 +473,74 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           completedAt: issue.completedAt,
           canceledAt: issue.canceledAt,
           dueDate: issue.dueDate,
-          
+
           // Related entities
-          assignee: assignee ? {
-            id: assignee.id,
-            name: assignee.name,
-            email: assignee.email,
-          } : null,
-          creator: creator ? {
-            id: creator.id,
-            name: creator.name,
-            email: creator.email,
-          } : null,
-          team: team ? {
-            id: team.id,
-            name: team.name,
-            key: team.key,
-          } : null,
-          project: project ? {
-            id: project.id,
-            name: project.name,
-            state: project.state,
-          } : null,
-          parent: parent ? {
-            id: parent.id,
-            title: parent.title,
-            identifier: parent.identifier,
-          } : null,
-          cycle: cycle ? {
-            id: cycle.id,
-            name: cycle.name,
-            number: cycle.number,
-          } : null,
-          
+          assignee: assignee
+            ? {
+                id: assignee.id,
+                name: assignee.name,
+                email: assignee.email,
+              }
+            : null,
+          creator: creator
+            ? {
+                id: creator.id,
+                name: creator.name,
+                email: creator.email,
+              }
+            : null,
+          team: team
+            ? {
+                id: team.id,
+                name: team.name,
+                key: team.key,
+              }
+            : null,
+          project: project
+            ? {
+                id: project.id,
+                name: project.name,
+                state: project.state,
+              }
+            : null,
+          parent: parent
+            ? {
+                id: parent.id,
+                title: parent.title,
+                identifier: parent.identifier,
+              }
+            : null,
+          cycle: cycle
+            ? {
+                id: cycle.id,
+                name: cycle.name,
+                number: cycle.number,
+              }
+            : null,
+
           // Collections
-          labels: await Promise.all(labels.nodes.map(async (label) => ({
-            id: label.id,
-            name: label.name,
-            color: label.color,
-          }))),
-          comments: await Promise.all(comments.nodes.map(async (comment) => ({
-            id: comment.id,
-            body: comment.body,
-            createdAt: comment.createdAt,
-          }))),
-          attachments: await Promise.all(attachments.nodes.map(async (attachment) => ({
-            id: attachment.id,
-            title: attachment.title,
-            url: attachment.url,
-          }))),
-          
+          labels: await Promise.all(
+            labels.nodes.map(async (label) => ({
+              id: label.id,
+              name: label.name,
+              color: label.color,
+            }))
+          ),
+          comments: await Promise.all(
+            comments.nodes.map(async (comment) => ({
+              id: comment.id,
+              body: comment.body,
+              createdAt: comment.createdAt,
+            }))
+          ),
+          attachments: await Promise.all(
+            attachments.nodes.map(async (attachment) => ({
+              id: attachment.id,
+              title: attachment.title,
+              url: attachment.url,
+            }))
+          ),
+
           // Additional metadata
           estimate: issue.estimate,
           customerTicketCount: issue.customerTicketCount,
