@@ -1,10 +1,10 @@
 {
-  "name": "@ibraheem4/linear-mcp",
+  "name": "@teal-bauer/linear-mcp",
   "version": "78.0.1",
   "description": "A Linear MCP server for interacting with Linear's API",
   "type": "module",
   "bin": {
-    "@ibraheem4/linear-mcp": "./build/index.js",
+    "@teal-bauer/linear-mcp": "./build/index.js",
     "linear-mcp": "./build/index.js"
   },
   "files": [
@@ -39,11 +39,14 @@
     "windsurf",
     "claude"
   ],
-  "author": "Ibraheem Abdul-Malik",
+  "authors": [
+    "Ibraheem Abdul-Malik",
+    "Teal Bauer"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ibraheem4/linear-mcp"
+    "url": "https://github.com/teal-bauer/linear-mcp"
   },
   "publishConfig": {
     "access": "public"

@@ -24,11 +24,11 @@ if (!API_KEY) {
   console.error("Error: LINEAR_API_KEY environment variable is required");
   console.error("");
   console.error("To use this tool, run it with your Linear API key:");
-  console.error("LINEAR_API_KEY=your-api-key npx @ibraheem4/linear-mcp");
+  console.error("LINEAR_API_KEY=your-api-key npx @teal-bauer/linear-mcp");
   console.error("");
   console.error("Or set it in your environment:");
   console.error("export LINEAR_API_KEY=your-api-key");
-  console.error("npx @ibraheem4/linear-mcp");
+  console.error("npx @teal-bauer/linear-mcp");
   process.exit(1);
 }
 

@@ -1,6 +1,8 @@
 # Linear MCP Server
 
 > Note: This is a custom implementation. For the official Cline Linear MCP server, see [cline/linear-mcp](https://github.com/cline/linear-mcp).
+>
+> This repository was forked from [tiovikram/linear-mcp](https://github.com/tiovikram/linear-mcp), which was in turn forked from [ibraheem4/linear-mcp](https://github.com/ibraheem4/linear-mcp).
 
 A Model Context Protocol (MCP) server that provides tools for interacting with Linear's API, enabling AI agents to manage issues, projects, and teams programmatically through the Linear platform.
 
@@ -23,7 +25,7 @@ A Model Context Protocol (MCP) server that provides tools for interacting with L
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
+- node.js (v18 or higher)
 - A Linear account with API access
 - Linear API key with appropriate permissions
 
@@ -34,14 +36,14 @@ A Model Context Protocol (MCP) server that provides tools for interacting with L
 2. Run with your API key:
 
 ```bash
-LINEAR_API_KEY=your-api-key npx @ibraheem4/linear-mcp
+LINEAR_API_KEY=your-api-key npx @teal-bauer/linear-mcp
 ```
 
 Or set it in your environment:
 
 ```bash
 export LINEAR_API_KEY=your-api-key
-npx @ibraheem4/linear-mcp
+npx @teal-bauer/linear-mcp
 ```
 
 ## Development Setup
