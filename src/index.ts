@@ -132,7 +132,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "update_issue",
-      description: "Update an existing issue",
+      description: "Update an existing issue. Note: To change an issue's state, you must first use list_workflow_states to get the proper stateId - do not try to use state names directly.",
       inputSchema: {
         type: "object",
         properties: {
