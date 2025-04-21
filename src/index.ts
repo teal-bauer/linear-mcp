@@ -1260,20 +1260,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "list_labels": {
         const args = request.params.arguments as unknown as ListLabelsArgs;
-        const filter: Record<string, any> = {};
-        if (args?.teamId) filter.team = { id: { eq: args.teamId } };
+        let combinedLabels: any[] = [];
 
-        const labels = await linearClient.issueLabels({
-          filter,
-        });
+        if (args?.teamId) {
+          // Query 1: Labels for the specific team
+          const teamLabels = await linearClient.issueLabels({
+            filter: { team: { id: { eq: args.teamId } } },
+          });
+          combinedLabels = combinedLabels.concat(teamLabels.nodes);
+
+          // Query 2: Labels with no team (workspace-level)
+          const workspaceLabels = await linearClient.issueLabels({
+            filter: { team: { id: { eq: null } } }, // Use eq: null for checking null relation
+          });
+          combinedLabels = combinedLabels.concat(workspaceLabels.nodes);
+
+          // Basic deduplication based on ID (though unlikely needed here)
+          const uniqueLabelIds = new Set();
+          combinedLabels = combinedLabels.filter(label => {
+            if (uniqueLabelIds.has(label.id)) {
+              return false;
+            }
+            uniqueLabelIds.add(label.id);
+            return true;
+          });
+
+        } else {
+          // No teamId provided, fetch all labels
+          const allLabels = await linearClient.issueLabels({});
+          combinedLabels = allLabels.nodes;
+        }
+
 
         const formattedLabels = await Promise.all(
-          labels.nodes.map(async (label) => ({
+          combinedLabels.map(async (label) => ({
             id: label.id,
             name: label.name,
             color: label.color,
             description: label.description,
-            team: label.team ? await label.team.then(team => ({
+            team: label.team ? await label.team.then((team: any) => ({ // Add type annotation
               id: team.id,
               name: team.name,
               key: team.key,
