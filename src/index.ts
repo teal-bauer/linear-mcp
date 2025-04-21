@@ -361,6 +361,105 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["cycleId"],
       },
     },
+    {
+      name: "get_project",
+      description: "Get detailed information about a specific project",
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectId: {
+            type: "string",
+            description: "Project ID",
+          },
+        },
+        required: ["projectId"],
+      },
+    },
+    {
+      name: "get_team",
+      description: "Get detailed information about a specific team",
+      inputSchema: {
+        type: "object",
+        properties: {
+          teamId: {
+            type: "string",
+            description: "Team ID",
+          },
+        },
+        required: ["teamId"],
+      },
+    },
+    {
+      name: "list_users",
+      description: "List all users in the workspace",
+      inputSchema: {
+        type: "object",
+        properties: {
+          first: {
+            type: "number",
+            description: "Number of users to return (default: 50)",
+          },
+        },
+      },
+    },
+    {
+      name: "get_user",
+      description: "Get detailed information about a specific user",
+      inputSchema: {
+        type: "object",
+        properties: {
+          userId: {
+            type: "string",
+            description: "User ID",
+          },
+        },
+        required: ["userId"],
+      },
+    },
+    {
+      name: "get_viewer",
+      description: "Get detailed information about the authenticated user.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "list_comments",
+      description: "List comments for a specific issue",
+      inputSchema: {
+        type: "object",
+        properties: {
+          issueId: {
+            type: "string",
+            description: "Issue ID",
+          },
+          first: {
+            type: "number",
+            description: "Number of comments to return (default: 50)",
+          },
+        },
+        required: ["issueId"],
+      },
+    },
+    {
+      name: "list_attachments",
+      description: "List attachments for a specific issue",
+      inputSchema: {
+        type: "object",
+        properties: {
+          issueId: {
+            type: "string",
+            description: "Issue ID",
+          },
+          first: {
+            type: "number",
+            description: "Number of attachments to return (default: 50)",
+          },
+        },
+        required: ["issueId"],
+      },
+    },
   ],
 }));
 

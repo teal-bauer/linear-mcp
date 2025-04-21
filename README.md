@@ -339,6 +339,72 @@ Returns comprehensive issue details including:
 - Attachments and embedded images
 - Timestamps and lifecycle information
 
+### get_project
+
+Gets detailed information about a specific project.
+
+```typescript
+{
+  projectId: string;  // Required: Project ID
+}
+```
+
+### get_team
+
+Gets detailed information about a specific team.
+
+```typescript
+{
+  teamId: string;  // Required: Team ID
+}
+```
+
+### list_users
+
+Lists all users in the workspace.
+
+```typescript
+{
+  first?: number;  // Optional: Number of users to return (default: 50)
+}
+```
+
+### get_user
+
+Gets detailed information about a specific user.
+
+```typescript
+{
+  userId: string;  // Required: User ID
+}
+```
+
+### get_viewer
+
+Gets detailed information about the authenticated user. No parameters required.
+
+### list_comments
+
+Lists comments for a specific issue.
+
+```typescript
+{
+  issueId: string;  // Required: Issue ID
+  first?: number;   // Optional: Number of comments to return (default: 50)
+}
+```
+
+### list_attachments
+
+Lists attachments for a specific issue.
+
+```typescript
+{
+  issueId: string;  // Required: Issue ID
+  first?: number;   // Optional: Number of attachments to return (default: 50)
+}
+```
+
 ## Development
 
 For development with auto-rebuild:
