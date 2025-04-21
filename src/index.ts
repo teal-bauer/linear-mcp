@@ -59,6 +59,13 @@ const server = new Server(
         remove_label: true,
         list_cycles: true,
         get_cycle: true,
+        get_project: true,
+        get_team: true,
+        list_users: true,
+        get_user: true,
+        get_viewer: true,
+        list_comments: true,
+        list_attachments: true,
       },
     },
   }
@@ -429,6 +436,34 @@ type ListCyclesArgs = {
   first?: number;
 };
 
+type GetProjectArgs = {
+  projectId: string;
+};
+
+type GetTeamArgs = {
+  teamId: string;
+};
+
+type ListUsersArgs = {
+  first?: number;
+};
+
+type GetUserArgs = {
+  userId: string;
+};
+
+type GetViewerArgs = {};
+
+type ListCommentsArgs = {
+  issueId: string;
+  first?: number;
+};
+
+type ListAttachmentsArgs = {
+  issueId: string;
+  first?: number;
+};
+
 type GetCycleArgs = {
   cycleId: string;
 };
@@ -436,6 +471,243 @@ type GetCycleArgs = {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (request.params.name) {
+      case "get_project": {
+        const args = request.params.arguments as unknown as GetProjectArgs;
+        if (!args?.projectId) {
+          throw new Error("Project ID is required");
+        }
+
+        const project = await linearClient.project(args.projectId);
+        if (!project) {
+          throw new Error(`Project ${args.projectId} not found`);
+        }
+
+        const teamsConnection = await project.teams;
+        const teams = teamsConnection ? (teamsConnection as any).nodes : [];
+
+        const projectDetails = {
+          id: project.id,
+          name: project.name,
+          description: project.description,
+          state: project.state,
+          teamIds: teams.map((team: any) => team.id),
+          url: project.url,
+          createdAt: project.createdAt,
+          updatedAt: project.updatedAt,
+          startedAt: project.startedAt,
+          endsAt: project.completedAt,
+          completedAt: project.completedAt,
+          canceledAt: project.canceledAt,
+          progress: project.progress,
+        };
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(projectDetails, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "get_team": {
+        const args = request.params.arguments as unknown as GetTeamArgs;
+        if (!args?.teamId) {
+          throw new Error("Team ID is required");
+        }
+
+        const team = await linearClient.team(args.teamId);
+        if (!team) {
+          throw new Error(`Team ${args.teamId} not found`);
+        }
+
+        const teamDetails = {
+          id: team.id,
+          name: team.name,
+          key: team.key,
+          description: team.description,
+          createdAt: team.createdAt,
+          updatedAt: team.updatedAt,
+        };
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(teamDetails, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "list_users": {
+        const args = request.params.arguments as unknown as ListUsersArgs;
+        const users = await linearClient.users({
+          first: args?.first ?? 50,
+        });
+
+        const formattedUsers = await Promise.all(
+          users.nodes.map(async (user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            displayName: user.displayName,
+            avatarUrl: user.avatarUrl,
+            statusEmoji: user.statusEmoji,
+            statusLabel: user.statusLabel,
+            isActive: user.active,
+            url: user.url,
+          }))
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(formattedUsers, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "get_user": {
+        const args = request.params.arguments as unknown as GetUserArgs;
+        if (!args?.userId) {
+          throw new Error("User ID is required");
+        }
+
+        const user = await linearClient.user(args.userId);
+        if (!user) {
+          throw new Error(`User ${args.userId} not found`);
+        }
+
+        const userDetails = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          statusEmoji: user.statusEmoji,
+          statusLabel: user.statusLabel,
+          isActive: user.active,
+          url: user.url,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        };
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(userDetails, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "get_viewer": {
+        const args = request.params.arguments as unknown as GetViewerArgs;
+        const viewer = await linearClient.viewer;
+
+        const viewerDetails = {
+          id: viewer.id,
+          name: viewer.name,
+          email: viewer.email,
+          displayName: viewer.displayName,
+          avatarUrl: viewer.avatarUrl,
+          statusEmoji: viewer.statusEmoji,
+          statusLabel: viewer.statusLabel,
+          isActive: viewer.active,
+          url: viewer.url,
+          createdAt: viewer.createdAt,
+          updatedAt: viewer.updatedAt,
+        };
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(viewerDetails, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "list_comments": {
+        const args = request.params.arguments as unknown as ListCommentsArgs;
+        if (!args?.issueId) {
+          throw new Error("Issue ID is required");
+        }
+
+        const issue = await linearClient.issue(args.issueId);
+        if (!issue) {
+          throw new Error(`Issue ${args.issueId} not found`);
+        }
+
+        const comments = await issue.comments({
+          first: args?.first ?? 50,
+        });
+
+        const formattedComments = await Promise.all(
+          comments.nodes.map(async (comment) => ({
+            id: comment.id,
+            body: comment.body,
+            createdAt: comment.createdAt,
+            updatedAt: comment.updatedAt,
+            user: comment.user ? await comment.user.then((user: any) => ({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+            })) : null,
+          }))
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(formattedComments, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "list_attachments": {
+        const args = request.params.arguments as unknown as ListAttachmentsArgs;
+        if (!args?.issueId) {
+          throw new Error("Issue ID is required");
+        }
+
+        const issue = await linearClient.issue(args.issueId);
+        if (!issue) {
+          throw new Error(`Issue ${args.issueId} not found`);
+        }
+
+        const attachments = await issue.attachments({
+          first: args?.first ?? 50,
+        });
+
+        const formattedAttachments = await Promise.all(
+          attachments.nodes.map(async (attachment) => ({
+            id: attachment.id,
+            title: attachment.title,
+            url: attachment.url,
+            createdAt: attachment.createdAt,
+            updatedAt: attachment.updatedAt,
+          }))
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(formattedAttachments, null, 2),
+            },
+          ],
+        };
+      }
+
       case "create_issue": {
         const args = request.params.arguments as unknown as CreateIssueArgs;
         if (!args?.title || !args?.teamId) {
@@ -1228,7 +1500,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               const url = (match as string).match(/\((.*?)\)/)?.[1] || "";
               return {
                 url,
-                analysis: "Image analysis would go here", // Replace with actual image analysis if available
+                analysis: "Image analysis would go here",
               };
             });
           }
@@ -1243,7 +1515,381 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 id: attachment.id,
                 title: attachment.title,
                 url: attachment.url,
-                analysis: "Image analysis would go here", // Replace with actual image analysis if available
+                analysis: "Image analysis would go here",
+              }))
+          );
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(issueDetails, null, 2),
+              },
+            ],
+          };
+        } catch (error: any) {
+          console.error("Error processing issue details:", error);
+          throw new Error(`Failed to process issue details: ${error.message}`);
+        }
+      }
+
+      case "list_labels": {
+        const args = request.params.arguments as unknown as ListLabelsArgs;
+        const filter: Record<string, any> = {};
+        if (args?.teamId) filter.team = { id: { eq: args.teamId } };
+
+        const labels = await linearClient.issueLabels({
+          filter,
+        });
+
+        const formattedLabels = await Promise.all(
+          labels.nodes.map(async (label) => ({
+            id: label.id,
+            name: label.name,
+            color: label.color,
+            description: label.description,
+            team: label.team ? await label.team.then(team => ({
+              id: team.id,
+              name: team.name,
+              key: team.key,
+            })) : null,
+          }))
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(formattedLabels, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "add_label": {
+        const args = request.params.arguments as unknown as AddLabelArgs;
+        if (!args?.name || !args?.color || !args?.teamId) {
+          throw new Error("Label name, color, and teamId are required");
+        }
+
+        const label = await linearClient.createIssueLabel({
+          name: args.name,
+          color: args.color,
+          teamId: args.teamId,
+          description: args.description,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(label, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "remove_label": {
+        const args = request.params.arguments as unknown as RemoveLabelArgs;
+        if (!args?.labelId) {
+          throw new Error("Label ID is required");
+        }
+
+        const label = await linearClient.issueLabel(args.labelId);
+        if (!label) {
+          throw new Error(`Label ${args.labelId} not found`);
+        }
+
+        await label.delete();
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ success: true, labelId: args.labelId }, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "list_cycles": {
+        const args = request.params.arguments as unknown as ListCyclesArgs;
+        if (!args?.teamId) {
+          throw new Error("Team ID is required");
+        }
+
+        const team = await linearClient.team(args.teamId);
+        if (!team) {
+          throw new Error(`Team ${args.teamId} not found`);
+        }
+
+        const cycles = await team.cycles({
+          first: args?.first ?? 50,
+        });
+
+        const formattedCycles = await Promise.all(
+          cycles.nodes.map(async (cycle) => ({
+            id: cycle.id,
+            number: cycle.number,
+            name: cycle.name,
+            description: cycle.description,
+            startsAt: cycle.startsAt,
+            endsAt: cycle.endsAt,
+            completedAt: cycle.completedAt,
+            progress: cycle.progress,
+          }))
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(formattedCycles, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "get_cycle": {
+        const args = request.params.arguments as unknown as GetCycleArgs;
+        if (!args?.cycleId) {
+          throw new Error("Cycle ID is required");
+        }
+
+        const cycle = await linearClient.cycle(args.cycleId);
+        if (!cycle) {
+          throw new Error(`Cycle ${args.cycleId} not found`);
+        }
+
+        const [team, issues] = await Promise.all([
+          cycle.team,
+          cycle.issues(),
+        ]);
+
+        const formattedIssues = await Promise.all(
+          issues.nodes.map(async (issue) => {
+            const state = await issue.state;
+            return {
+              id: issue.id,
+              identifier: issue.identifier,
+              title: issue.title,
+              status: state ? state.name : "Unknown",
+              priority: issue.priority,
+              url: issue.url,
+            };
+          })
+        );
+
+        const cycleDetails = {
+          id: cycle.id,
+          number: cycle.number,
+          name: cycle.name,
+          description: cycle.description,
+          startsAt: cycle.startsAt,
+          endsAt: cycle.endsAt,
+          completedAt: cycle.completedAt,
+          progress: cycle.progress,
+          team: team ? {
+            id: team.id,
+            name: team.name,
+            key: team.key,
+          } : null,
+          issues: formattedIssues,
+        };
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(cycleDetails, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "get_issue": {
+        const args = request.params.arguments as unknown as GetIssueArgs;
+        if (!args?.issueId) {
+          throw new Error("Issue ID is required");
+        }
+
+        const issue = await linearClient.issue(args.issueId);
+        if (!issue) {
+          throw new Error(`Issue ${args.issueId} not found`);
+        }
+
+        try {
+          const [
+            state,
+            assignee,
+            creator,
+            team,
+            project,
+            parent,
+            cycle,
+            labels,
+            comments,
+            attachments,
+          ] = await Promise.all([
+            issue.state,
+            issue.assignee,
+            issue.creator,
+            issue.team,
+            issue.project,
+            issue.parent,
+            issue.cycle,
+            issue.labels(),
+            issue.comments(),
+            issue.attachments(),
+          ]);
+
+          const issueDetails: {
+            id: string;
+            identifier: string;
+            title: string;
+            description: string | undefined;
+            priority: number;
+            priorityLabel: string;
+            status: string;
+            url: string;
+            createdAt: Date;
+            updatedAt: Date;
+            startedAt: Date | null;
+            completedAt: Date | null;
+            canceledAt: Date | null;
+            dueDate: string | null;
+            assignee: { id: string; name: string; email: string } | null;
+            creator: { id: string; name: string; email: string } | null;
+            team: { id: string; name: string; key: string } | null;
+            project: { id: string; name: string; state: string } | null;
+            parent: { id: string; title: string; identifier: string } | null;
+            cycle: { id: string; name: string; number: number } | null;
+            labels: Array<{ id: string; name: string; color: string }>;
+            comments: Array<{ id: string; body: string; createdAt: Date }>;
+            attachments: Array<{ id: string; title: string; url: string }>;
+            embeddedImages: Array<{ url: string; analysis: string }>;
+            estimate: number | null;
+            customerTicketCount: number;
+            previousIdentifiers: string[];
+            branchName: string;
+            archivedAt: Date | null;
+            autoArchivedAt: Date | null;
+            autoClosedAt: Date | null;
+            trashed: boolean;
+          } = {
+            id: issue.id,
+            identifier: issue.identifier,
+            title: issue.title,
+            description: issue.description,
+            priority: issue.priority,
+            priorityLabel: issue.priorityLabel,
+            status: state ? await state.name : "Unknown",
+            url: issue.url,
+            createdAt: issue.createdAt,
+            updatedAt: issue.updatedAt,
+            startedAt: issue.startedAt || null,
+            completedAt: issue.completedAt || null,
+            canceledAt: issue.canceledAt || null,
+            dueDate: issue.dueDate,
+            assignee: assignee
+              ? {
+                  id: assignee.id,
+                  name: assignee.name,
+                  email: assignee.email,
+                }
+              : null,
+            creator: creator
+              ? {
+                  id: creator.id,
+                  name: creator.name,
+                  email: creator.email,
+                }
+              : null,
+            team: team
+              ? {
+                  id: team.id,
+                  name: team.name,
+                  key: team.key,
+                }
+              : null,
+            project: project
+              ? {
+                  id: project.id,
+                  name: project.name,
+                  state: project.state,
+                }
+              : null,
+            parent: parent
+              ? {
+                  id: parent.id,
+                  title: parent.title,
+                  identifier: parent.identifier,
+                }
+              : null,
+            cycle:
+              cycle && cycle.name
+                ? {
+                    id: cycle.id,
+                    name: cycle.name,
+                    number: cycle.number,
+                  }
+                : null,
+            labels: await Promise.all(
+              labels.nodes.map(async (label: any) => ({
+                id: label.id,
+                name: label.name,
+                color: label.color,
+              }))
+            ),
+            comments: await Promise.all(
+              comments.nodes.map(async (comment: any) => ({
+                id: comment.id,
+                body: comment.body,
+                createdAt: comment.createdAt,
+              }))
+            ),
+            attachments: await Promise.all(
+              attachments.nodes.map(async (attachment: any) => ({
+                id: attachment.id,
+                title: attachment.title,
+                url: attachment.url,
+              }))
+            ),
+            embeddedImages: [],
+            estimate: issue.estimate || null,
+            customerTicketCount: issue.customerTicketCount || 0,
+            previousIdentifiers: issue.previousIdentifiers || [],
+            branchName: issue.branchName || "",
+            archivedAt: issue.archivedAt || null,
+            autoArchivedAt: issue.autoArchivedAt || null,
+            autoClosedAt: issue.autoClosedAt || null,
+            trashed: issue.trashed || false,
+          };
+
+          // Extract embedded images from description
+          const imageMatches =
+            issue.description?.match(/!\[.*?\]\((.*?)\)/g) || [];
+          if (imageMatches.length > 0) {
+            issueDetails.embeddedImages = imageMatches.map((match) => {
+              const url = (match as string).match(/\((.*?)\)/)?.[1] || "";
+              return {
+                url,
+                analysis: "Image analysis would go here",
+              };
+            });
+          }
+
+          // Add image analysis for attachments if they are images
+          issueDetails.attachments = await Promise.all(
+            attachments.nodes
+              .filter((attachment: any) =>
+                attachment.url.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+              )
+              .map(async (attachment: any) => ({
+                id: attachment.id,
+                title: attachment.title,
+                url: attachment.url,
+                analysis: "Image analysis would go here",
               }))
           );
 
