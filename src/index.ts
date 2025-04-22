@@ -66,6 +66,11 @@ const server = new Server(
         get_viewer: true,
         list_comments: true,
         list_attachments: true,
+        // Sub-issue handling capabilities
+        list_sub_issues: true,
+        create_sub_issue: true,
+        link_issues: true,
+        unlink_issues: true,
       },
     },
   }
@@ -460,6 +465,103 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["issueId"],
       },
     },
+    {
+      name: "list_sub_issues",
+      description: "List child issues of a parent issue",
+      inputSchema: {
+        type: "object",
+        properties: {
+          issueId: {
+            type: "string",
+            description: "Parent issue ID",
+          },
+          first: {
+            type: "number",
+            description: "Number of sub-issues to return (default: 50)",
+          },
+        },
+        required: ["issueId"],
+      },
+    },
+    {
+      name: "create_sub_issue",
+      description: "Create a new child issue under a parent issue",
+      inputSchema: {
+        type: "object",
+        properties: {
+          parentId: {
+            type: "string",
+            description: "Parent issue ID",
+          },
+          title: {
+            type: "string",
+            description: "Issue title",
+          },
+          description: {
+            type: "string",
+            description: "Issue description (markdown supported)",
+          },
+          teamId: {
+            type: "string",
+            description: "Team ID",
+          },
+          assigneeId: {
+            type: "string",
+            description: "Assignee user ID (optional)",
+          },
+          priority: {
+            type: "number",
+            description: "Priority (0-4, optional)",
+            minimum: 0,
+            maximum: 4,
+          },
+          labels: {
+            type: "array",
+            items: {
+              type: "string",
+            },
+            description: "Label IDs to apply (optional)",
+          },
+        },
+        required: ["parentId", "title", "teamId"],
+      },
+    },
+    {
+      name: "link_issues",
+      description: "Link two issues in a parent-child relationship",
+      inputSchema: {
+        type: "object",
+        properties: {
+          parentId: {
+            type: "string",
+            description: "Parent issue ID",
+          },
+          childId: {
+            type: "string",
+            description: "Child issue ID",
+          },
+        },
+        required: ["parentId", "childId"],
+      },
+    },
+    {
+      name: "unlink_issues",
+      description: "Remove parent-child relationship between two issues",
+      inputSchema: {
+        type: "object",
+        properties: {
+          parentId: {
+            type: "string",
+            description: "Parent issue ID",
+          },
+          childId: {
+            type: "string",
+            description: "Child issue ID",
+          },
+        },
+        required: ["parentId", "childId"],
+      },
+    },
   ],
 }));
 
@@ -565,6 +667,31 @@ type ListAttachmentsArgs = {
 
 type GetCycleArgs = {
   cycleId: string;
+};
+
+type ListSubIssuesArgs = {
+  issueId: string;
+  first?: number;
+};
+
+type CreateSubIssueArgs = {
+  parentId: string;
+  title: string;
+  description?: string;
+  teamId: string;
+  assigneeId?: string;
+  priority?: number;
+  labels?: string[];
+};
+
+type LinkIssuesArgs = {
+  parentId: string;
+  childId: string;
+};
+
+type UnlinkIssuesArgs = {
+  parentId: string;
+  childId: string;
 };
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -2029,6 +2156,168 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           console.error("Error processing issue details:", error);
           throw new Error(`Failed to process issue details: ${error.message}`);
         }
+      }
+
+      case "list_sub_issues": {
+        const args = request.params.arguments as unknown as ListSubIssuesArgs;
+        if (!args?.issueId) {
+          throw new Error("Parent issue ID is required");
+        }
+
+        const issue = await linearClient.issue(args.issueId);
+        if (!issue) {
+          throw new Error(`Issue ${args.issueId} not found`);
+        }
+
+        const subIssues = await issue.children({
+          first: args?.first ?? 50,
+        });
+
+        const formattedSubIssues = await Promise.all(
+          subIssues.nodes.map(async (subIssue) => {
+            const [state, assignee] = await Promise.all([
+              subIssue.state,
+              subIssue.assignee,
+            ]);
+            return {
+              id: subIssue.id,
+              identifier: subIssue.identifier,
+              title: subIssue.title,
+              status: state ? state.name : "Unknown",
+              assignee: assignee ? assignee.name : "Unassigned",
+              priority: subIssue.priority,
+              url: subIssue.url,
+            };
+          })
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(formattedSubIssues, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "create_sub_issue": {
+        const args = request.params.arguments as unknown as CreateSubIssueArgs;
+        if (!args?.parentId || !args?.title || !args?.teamId) {
+          throw new Error("Parent ID, title, and teamId are required");
+        }
+
+        const parentIssue = await linearClient.issue(args.parentId);
+        if (!parentIssue) {
+          throw new Error(`Parent issue ${args.parentId} not found`);
+        }
+
+        const issue = await linearClient.createIssue({
+          title: args.title,
+          description: args.description,
+          teamId: args.teamId,
+          assigneeId: args.assigneeId,
+          priority: args.priority,
+          labelIds: args.labels,
+          parentId: args.parentId,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(issue, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "link_issues": {
+        const args = request.params.arguments as unknown as LinkIssuesArgs;
+        if (!args?.parentId || !args?.childId) {
+          throw new Error("Parent ID and child ID are required");
+        }
+
+        const [parentIssue, childIssue] = await Promise.all([
+          linearClient.issue(args.parentId),
+          linearClient.issue(args.childId),
+        ]);
+
+        if (!parentIssue) {
+          throw new Error(`Parent issue ${args.parentId} not found`);
+        }
+        if (!childIssue) {
+          throw new Error(`Child issue ${args.childId} not found`);
+        }
+
+        await childIssue.update({
+          parentId: args.parentId,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: `Linked issue ${childIssue.identifier} as child of ${parentIssue.identifier}`,
+                relationship: {
+                  parent: {
+                    id: parentIssue.id,
+                    identifier: parentIssue.identifier,
+                    title: parentIssue.title,
+                  },
+                  child: {
+                    id: childIssue.id,
+                    identifier: childIssue.identifier,
+                    title: childIssue.title,
+                  },
+                },
+              }, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "unlink_issues": {
+        const args = request.params.arguments as unknown as UnlinkIssuesArgs;
+        if (!args?.parentId || !args?.childId) {
+          throw new Error("Parent ID and child ID are required");
+        }
+
+        const [parentIssue, childIssue] = await Promise.all([
+          linearClient.issue(args.parentId),
+          linearClient.issue(args.childId),
+        ]);
+
+        if (!parentIssue) {
+          throw new Error(`Parent issue ${args.parentId} not found`);
+        }
+        if (!childIssue) {
+          throw new Error(`Child issue ${args.childId} not found`);
+        }
+
+        // Verify the relationship exists
+        const currentParent = await childIssue.parent;
+        if (!currentParent || currentParent.id !== parentIssue.id) {
+          throw new Error(`Issue ${childIssue.identifier} is not a child of ${parentIssue.identifier}`);
+        }
+
+        await childIssue.update({
+          parentId: null,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: `Unlinked issue ${childIssue.identifier} from parent ${parentIssue.identifier}`,
+              }, null, 2),
+            },
+          ],
+        };
       }
 
       default:
